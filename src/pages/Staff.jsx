@@ -34,6 +34,14 @@ export default function Staff() {
     load()
   }
 
+  async function resetMfa(id, mail) {
+    if (!window.confirm(`${mail} ning ikki bosqichli himoyasi o'chirilsinmi? Keyingi kirishda u QR kodni qayta skanerlaydi.`)) return
+    setError(''); setOk('')
+    const { error } = await supabase.rpc('reset_staff_mfa', { p_user: id })
+    if (error) setError(error.message)
+    else setOk(`${mail}: ikki bosqichli himoya qayta o'rnatiladi`)
+  }
+
   async function remove(id, mail) {
     if (!window.confirm(`${mail} ning panelga kirish huquqi olib tashlansinmi?`)) return
     const { error } = await supabase.rpc('remove_staff', { p_user: id })
@@ -103,7 +111,10 @@ export default function Staff() {
                   <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">{date(r.created_at)}</td>
                   <td className="px-4 py-3 text-right">
                     {r.user_id !== session.user.id && (
-                      <button onClick={() => remove(r.user_id, r.email)} className="text-sm font-semibold text-red-600 hover:text-red-700">Olib tashlash</button>
+                      <span className="inline-flex flex-wrap justify-end gap-x-4 gap-y-1">
+                        <button onClick={() => resetMfa(r.user_id, r.email)} className="text-sm font-semibold text-brand-700 hover:text-brand-900">2FA ni tiklash</button>
+                        <button onClick={() => remove(r.user_id, r.email)} className="text-sm font-semibold text-red-600 hover:text-red-700">Olib tashlash</button>
+                      </span>
                     )}
                   </td>
                 </tr>

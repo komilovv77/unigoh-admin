@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase, isConfigured } from './lib/supabase'
 import Login from './components/Login'
 import Shell from './components/Shell'
+import Mfa from './components/Mfa'
 import { LogoMark, btnSecondary, btnPrimary, inputCls, ErrorBox } from './components/ui'
 
 const AdminContext = createContext(null)
@@ -12,6 +13,7 @@ export default function App() {
   const [staff, setStaff] = useState(undefined)
   const [universities, setUniversities] = useState([])
   const [recovering, setRecovering] = useState(false)
+  const [aal, setAal] = useState(null)
 
   useEffect(() => {
     if (!isConfigured) return
@@ -29,10 +31,14 @@ export default function App() {
     if (!session) { setStaff(session === null ? null : undefined); return }
     let cancelled = false
     ;(async () => {
-      const { data } = await supabase.from('staff').select('*').eq('user_id', session.user.id).maybeSingle()
+      const [{ data }, { data: level }] = await Promise.all([
+        supabase.from('staff').select('*').eq('user_id', session.user.id).maybeSingle(),
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ])
       if (cancelled) return
+      setAal(level?.currentLevel || 'aal1')
       setStaff(data || null)
-      if (data) loadUniversities()
+      if (data && level?.currentLevel === 'aal2') loadUniversities()
     })()
     return () => { cancelled = true }
   }, [session, loadUniversities])
@@ -66,6 +72,18 @@ export default function App() {
           <b>{session.user.email}</b> akkaunti yaratildi. UniGoh administratori sizni universitetingizga biriktirgandan so'ng panel ochiladi.
         </p>
         <button className={`${btnSecondary} mt-6`} onClick={() => supabase.auth.signOut()}>Chiqish</button>
+      </Centered>
+    )
+  }
+
+  if (aal !== 'aal2') {
+    return (
+      <Centered>
+        <Mfa onVerified={async () => {
+          const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+          setAal(data?.currentLevel || 'aal1')
+          loadUniversities()
+        }} />
       </Centered>
     )
   }
