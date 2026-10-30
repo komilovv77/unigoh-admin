@@ -184,9 +184,19 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
   )
 }
 
+const DOC_LABEL = { passport: 'Pasport / ID karta', diploma: 'Shahodatnoma / attestat', certificate: 'Sertifikat', other: 'Boshqa hujjat' }
+
+async function openStored(path) {
+  const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 300)
+  if (error) { window.alert("Faylni ochib bo'lmadi: " + error.message); return }
+  window.open(data.signedUrl, '_blank', 'noopener')
+}
+
 export function Documents({ profile, certs }) {
   const list = certs ?? (Array.isArray(profile.certificates) ? profile.certificates.filter((c) => c && (c.title || c.file_url)) : [])
+  const stored = Array.isArray(profile.documents) ? profile.documents : []
   const docs = [
+    ...stored.map((d) => ({ label: `${DOC_LABEL[d.kind] || 'Hujjat'}: ${d.name}`, path: d.path })),
     profile.diploma_url && { label: 'Shahodatnoma / attestat', url: profile.diploma_url },
     profile.portfolio_url && { label: 'Portfolio', url: profile.portfolio_url },
     ...list.map((c) => ({ label: `${c.title || 'Sertifikat'}${c.score ? ' — ' + c.score : ''}`, url: c.file_url })),
@@ -200,7 +210,9 @@ export function Documents({ profile, certs }) {
           {docs.map((d, i) => (
             <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-cream border border-apricot-100 text-sm">
               <span className="font-medium text-slate-800">{d.label}</span>
-              {d.url
+              {d.path
+                ? <button type="button" onClick={() => openStored(d.path)} className="inline-flex items-center gap-1 font-semibold text-brand-700 hover:text-brand-900 shrink-0">Ochish <ExternalLink className="w-3.5 h-3.5" /></button>
+                : d.url
                 ? <a href={d.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-brand-700 hover:text-brand-900 shrink-0">Ochish <ExternalLink className="w-3.5 h-3.5" /></a>
                 : <span className="text-xs text-slate-400 shrink-0">fayl yo'q</span>}
             </li>

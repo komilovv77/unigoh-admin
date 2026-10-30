@@ -42,7 +42,7 @@ export function useApplications({ isMaster = false, universityId = null, student
 }
 
 export const PROFILE_COLS =
-  'id, full_name, phone, region, bio, school_name, diploma_url, test_score, certificates, portfolio_url, updated_at'
+  'id, full_name, phone, region, bio, school_name, diploma_url, test_score, certificates, portfolio_url, documents, updated_at'
 
 export async function loadProfiles(ids) {
   if (!ids.length) return {}
