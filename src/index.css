@@ -1,25 +1,41 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
+/* UniGoh brend ranglari: lojuvard (asosiy), o'rik (urg'u), krem (fon) */
+@theme {
+  --color-brand-50: #eff4ff;
+  --color-brand-100: #dbe6fe;
+  --color-brand-200: #bfd3fe;
+  --color-brand-300: #93b4fd;
+  --color-brand-400: #6090fa;
+  --color-brand-500: #3b6cf6;
+  --color-brand-600: #2552e0;
+  --color-brand-700: #1e40af;
+  --color-brand-800: #1e3a8a;
+  --color-brand-900: #172e6b;
+  --color-brand-950: #0f1d45;
+
+  --color-apricot-50: #fffbeb;
+  --color-apricot-100: #fef3c7;
+  --color-apricot-200: #fde68a;
+  --color-apricot-300: #fcd34d;
+  --color-apricot-400: #fbbf24;
+  --color-apricot-500: #f59e0b;
+  --color-apricot-600: #d97706;
+  --color-apricot-700: #b45309;
+  --color-apricot-800: #92400e;
+  --color-apricot-900: #78350f;
+
+  --color-cream: #fffbf2;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: #0f172a;
-  color: #f1f5f9;
+  background: var(--color-cream);
+  color: #0f172a;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #1e293b; }
-::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #64748b; }
-
-.line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
-.line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-
-input, textarea, select {
+input, textarea, select, button {
   font-family: inherit;
 }
