@@ -29,7 +29,7 @@ export default function Staff() {
     setError(''); setOk('')
     const { error } = await supabase.rpc('assign_staff', { p_email: email, p_role: role, p_university: role === 'master' ? null : uni })
     if (error) return setError(error.message)
-    setOk(`${email} biriktirildi`)
+    setOk(`${email} biriktirildi. Hali ro'yxatdan o'tmagan bo'lsa, o'tishi bilan panel ochiladi.`)
     setEmail('')
     load()
   }
@@ -48,8 +48,8 @@ export default function Staff() {
       <Card className="p-5">
         <h2 className="font-bold text-brand-900">Xodim biriktirish</h2>
         <ol className="mt-2 text-sm text-slate-600 list-decimal pl-5 space-y-0.5">
-          <li>Universitet xodimi admin panel sahifasida "Ro'yxatdan o'tish" orqali akkaunt ochadi.</li>
-          <li>Siz uning emailini shu yerga yozib, universitetini tanlaysiz.</li>
+          <li>Xodimning emailini yozib, rolini va universitetini tanlang.</li>
+          <li>U admin panelda shu email bilan ro'yxatdan o'tadi (yoki allaqachon akkaunti bo'lsa, shunchaki kiradi).</li>
           <li>U qayta kirganda faqat o'z universiteti arizalarini ko'radi.</li>
         </ol>
         <form onSubmit={assign} className="mt-4 grid sm:grid-cols-[1fr_200px_1fr_auto] gap-3 items-end">
