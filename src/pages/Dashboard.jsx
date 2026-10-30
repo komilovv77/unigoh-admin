@@ -8,70 +8,57 @@ import { go } from '../components/Shell'
 
 export default function Dashboard() {
   const { isMaster, staff, uniById, universities } = useAdmin()
-  const { apps, flags, loading, error } = useApplications()
+  const { apps, flags, ledger, loading, error } = useApplications({ isMaster })
 
   if (loading) return <p className="text-slate-500">Yuklanmoqda...</p>
 
   const total = apps.length
   const active = apps.filter((a) => ACTIVE.includes(a.status)).length
-  const enrolled = apps.filter((a) => a.status === 'ENROLLED')
-  const conv = total ? Math.round((enrolled.length / total) * 100) : 0
-  const expected = enrolled.filter((a) => a.commission_status === 'pending' || a.commission_status === 'invoiced')
-    .reduce((s, a) => s + Number(a.commission_amount || 0), 0)
-  const paid = enrolled.filter((a) => a.commission_status === 'paid').reduce((s, a) => s + Number(a.commission_amount || 0), 0)
+  const enrolled = apps.filter((a) => a.status === 'ENROLLED').length
+  const conv = total ? Math.round((enrolled / total) * 100) : 0
+  const L = Object.values(ledger)
+  const open = L.filter((r) => r.status !== 'paid').reduce((s, r) => s + Number(r.amount || 0), 0)
+  const paid = L.filter((r) => r.status === 'paid').reduce((s, r) => s + Number(r.amount || 0), 0)
   const flagCount = Object.keys(flags).length
 
-  // Voronka: har bir bosqichga yetganlar soni
   const reached = (st) => apps.filter((a) => FUNNEL.indexOf(a.status) >= FUNNEL.indexOf(st)).length
   const funnel = FUNNEL.map((st) => ({ st, n: reached(st) }))
   const max = Math.max(1, funnel[0].n)
 
-  const perUni = universities.map((u) => {
+  const perUni = isMaster ? universities.map((u) => {
     const list = apps.filter((a) => a.university_id === u.id)
-    const enr = list.filter((a) => a.status === 'ENROLLED')
+    const enr = list.filter((a) => a.status === 'ENROLLED').length
     return {
-      u,
-      total: list.length,
-      enrolled: enr.length,
-      conv: list.length ? Math.round((enr.length / list.length) * 100) : 0,
-      commission: enr.reduce((s, a) => s + Number(a.commission_amount || 0), 0),
+      u, total: list.length, enrolled: enr,
+      conv: list.length ? Math.round((enr / list.length) * 100) : 0,
+      money: list.reduce((s, a) => s + Number(ledger[a.id]?.amount || 0), 0),
     }
-  }).filter((r) => isMaster ? true : r.u.id === staff.university_id)
+  }) : []
 
   return (
     <div className="space-y-6">
-      <PageTitle
-        title="Bosh panel"
-        subtitle={isMaster ? 'Butun platforma bo\'yicha umumiy holat' : uniById[staff.university_id]?.name}
-      />
+      <PageTitle title="Bosh panel" subtitle={isMaster ? "Butun platforma bo'yicha" : uniById[staff.university_id]?.name} />
       <ErrorBox error={error} />
 
       {flagCount > 0 && (
-        <button
-          onClick={() => go('applications', { flag: '1' })}
-          className="w-full flex items-center justify-between gap-3 p-4 rounded-2xl bg-apricot-100 border border-apricot-300 text-left"
-        >
+        <button onClick={() => go('applications', { flag: '1' })}
+          className="w-full flex items-center justify-between gap-3 p-4 rounded-2xl bg-apricot-100 border border-apricot-300 text-left">
           <span className="flex items-center gap-3 text-apricot-900 font-semibold">
             <AlertTriangle className="w-5 h-5 shrink-0" />
-            {flagCount} ta arizada e'tibor talab qilinadi (talaba va OTM ma'lumotlari mos emas yoki uzoq vaqt harakatsiz)
+            {flagCount} ta arizaga e'tibor kerak (talaba va universitet ma'lumoti mos emas yoki uzoq vaqt harakatsiz)
           </span>
           <ArrowRight className="w-5 h-5 text-apricot-800 shrink-0" />
         </button>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-2 ${isMaster ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
         <Stat label="Jami arizalar" value={total} />
         <Stat label="Jarayonda" value={active} />
-        <Stat label="O'qishga kirdi" value={enrolled.length} hint={`Konversiya: ${conv}%`} />
-        <Stat
-          label={isMaster ? 'Komissiya (kutilmoqda)' : 'UniGoh ulushi (to\'lanmagan)'}
-          value={mln(expected)}
-          hint={`To'langan: ${mln(paid)}`}
-          accent
-        />
+        <Stat label="O'qishga kirdi" value={enrolled} hint={`Konversiya: ${conv}%`} />
+        {isMaster && <Stat label="Ulush (to'lanmagan)" value={mln(open)} hint={`To'langan: ${mln(paid)}`} accent />}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className={`grid gap-6 ${isMaster ? 'lg:grid-cols-2' : ''}`}>
         <Card className="p-6">
           <h2 className="text-lg font-bold text-brand-900">Ariza voronkasi</h2>
           <p className="text-sm text-slate-500">Har bir bosqichga yetgan arizalar</p>
@@ -83,51 +70,40 @@ export default function Dashboard() {
                   <span className="font-bold text-brand-900">{n}</span>
                 </div>
                 <div className="h-2.5 rounded-full bg-brand-50 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${st === 'ENROLLED' ? 'bg-apricot-500' : 'bg-brand-700'}`}
-                    style={{ width: `${(n / max) * 100}%` }}
-                  />
+                  <div className={`h-full rounded-full ${st === 'ENROLLED' ? 'bg-apricot-500' : 'bg-brand-700'}`} style={{ width: `${(n / max) * 100}%` }} />
                 </div>
               </button>
             ))}
           </div>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="text-lg font-bold text-brand-900">{isMaster ? 'Universitetlar kesimida' : 'Natijalar'}</h2>
-          <p className="text-sm text-slate-500">Arizalar, o'qishga kirganlar va komissiya</p>
-          {perUni.length === 0 ? (
-            <Empty>Universitetlar hali qo'shilmagan</Empty>
-          ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-500 border-b border-brand-100">
-                    <th className="py-2 font-medium">Universitet</th>
-                    <th className="py-2 font-medium text-right">Ariza</th>
-                    <th className="py-2 font-medium text-right">Kirdi</th>
-                    <th className="py-2 font-medium text-right">Konv.</th>
-                    <th className="py-2 font-medium text-right">Komissiya</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {perUni.map((r) => (
-                    <tr key={r.u.id} className="border-b border-brand-50 last:border-0">
-                      <td className="py-2.5 font-semibold text-brand-900">
-                        {r.u.code}
-                        <span className="ml-1.5 text-xs font-normal text-slate-500">{Number(r.u.commission_rate)}%</span>
-                      </td>
-                      <td className="py-2.5 text-right">{r.total}</td>
-                      <td className="py-2.5 text-right">{r.enrolled}</td>
-                      <td className="py-2.5 text-right">{r.conv}%</td>
-                      <td className="py-2.5 text-right font-semibold text-apricot-700">{mln(r.commission)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+        {isMaster && (
+          <Card className="p-6">
+            <h2 className="text-lg font-bold text-brand-900">Universitetlar kesimida</h2>
+            <p className="text-sm text-slate-500">Bosing — universitet sahifasi ochiladi</p>
+            {perUni.length === 0 ? <Empty>Universitetlar yo'q</Empty> : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left text-slate-500 border-b border-brand-100">
+                    <th className="py-2 font-medium">Universitet</th><th className="py-2 font-medium text-right">Ariza</th>
+                    <th className="py-2 font-medium text-right">Kirdi</th><th className="py-2 font-medium text-right">Konv.</th>
+                    <th className="py-2 font-medium text-right">Ulush</th></tr></thead>
+                  <tbody>
+                    {perUni.map((r) => (
+                      <tr key={r.u.id} onClick={() => go('university', { id: r.u.id })} className="border-b border-brand-50 last:border-0 cursor-pointer hover:bg-cream">
+                        <td className="py-2.5 font-semibold text-brand-900">{r.u.code}</td>
+                        <td className="py-2.5 text-right">{r.total}</td>
+                        <td className="py-2.5 text-right">{r.enrolled}</td>
+                        <td className="py-2.5 text-right">{r.conv}%</td>
+                        <td className="py-2.5 text-right font-semibold text-apricot-700">{mln(r.money)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   )
