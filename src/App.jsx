@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase, isConfigured } from './lib/supabase'
 import Login from './components/Login'
 import Shell from './components/Shell'
-import { LogoMark, btnSecondary } from './components/ui'
+import { LogoMark, btnSecondary, btnPrimary, inputCls, ErrorBox } from './components/ui'
 
 const AdminContext = createContext(null)
 export const useAdmin = () => useContext(AdminContext)
@@ -11,11 +11,12 @@ export default function App() {
   const [session, setSession] = useState(undefined) // undefined = yuklanmoqda
   const [staff, setStaff] = useState(undefined)
   const [universities, setUniversities] = useState([])
+  const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
     if (!isConfigured) return
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((e, s) => { setSession(s); if (e === 'PASSWORD_RECOVERY') setRecovering(true) })
     return () => subscription.unsubscribe()
   }, [])
 
@@ -48,6 +49,8 @@ export default function App() {
       </Centered>
     )
   }
+
+  if (recovering) return <Centered><NewPassword onDone={() => setRecovering(false)} /></Centered>
 
   if (session === undefined || (session && staff === undefined)) {
     return <Centered><p className="text-slate-500">Yuklanmoqda...</p></Centered>
@@ -92,5 +95,31 @@ function Centered({ children }) {
         {children}
       </div>
     </div>
+  )
+}
+
+function NewPassword({ onDone }) {
+  const [p1, setP1] = useState('')
+  const [p2, setP2] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function submit(e) {
+    e.preventDefault()
+    setError('')
+    if (p1 !== p2) return setError('Parollar bir xil emas.')
+    setBusy(true)
+    const { error } = await supabase.auth.updateUser({ password: p1 })
+    setBusy(false)
+    if (error) return setError(error.message)
+    onDone()
+  }
+  return (
+    <form onSubmit={submit} className="space-y-4 text-left">
+      <h1 className="text-xl font-bold text-brand-900 text-center">Yangi parol o'rnating</h1>
+      <input type="password" required minLength={8} autoComplete="new-password" placeholder="Yangi parol (kamida 8 belgi)" className={inputCls} value={p1} onChange={(e) => setP1(e.target.value)} />
+      <input type="password" required minLength={8} autoComplete="new-password" placeholder="Yana bir marta" className={inputCls} value={p2} onChange={(e) => setP2(e.target.value)} />
+      <ErrorBox error={error} />
+      <button className={`${btnPrimary} w-full py-3`} disabled={busy}>{busy ? 'Saqlanmoqda...' : 'Saqlash'}</button>
+    </form>
   )
 }

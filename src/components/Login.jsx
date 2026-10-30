@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { LogoMark, inputCls, btnPrimary, ErrorBox } from './ui'
 
 export default function Login() {
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'reset'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -14,11 +14,15 @@ export default function Login() {
   async function submit(e) {
     e.preventDefault()
     setLoading(true); setError(''); setInfo('')
-    if (mode === 'signin') {
+    if (mode === 'reset') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+      if (error) setError(error.message)
+      else setInfo("Agar bu email ro'yxatdan o'tgan bo'lsa, unga parolni tiklash havolasi yuborildi.")
+    } else if (mode === 'signin') {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(error.message === 'Invalid login credentials' ? "Email yoki parol noto'g'ri" : error.message)
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin } })
       if (error) setError(error.message)
       else if (!data.session) setInfo("Emailingizga tasdiqlash xati yuborildi. Tasdiqlang, so'ng kiring.")
     }
@@ -49,7 +53,7 @@ export default function Login() {
         <form onSubmit={submit} className="w-full max-w-sm space-y-4">
           <LogoMark className="w-12 h-12 lg:hidden" />
           <div>
-            <h2 className="text-2xl font-extrabold text-brand-900">{mode === 'signin' ? 'Kirish' : "Xodim sifatida ro'yxatdan o'tish"}</h2>
+            <h2 className="text-2xl font-extrabold text-brand-900">{mode === 'signin' ? 'Kirish' : mode === 'reset' ? 'Parolni tiklash' : "Xodim sifatida ro'yxatdan o'tish"}</h2>
             <p className="mt-1 text-sm text-slate-600">
               {mode === 'signin'
                 ? 'UniGoh jamoasi va hamkor universitetlar uchun.'
@@ -67,16 +71,19 @@ export default function Login() {
             <label className="block text-sm font-semibold text-brand-900 mb-1.5">Email</label>
             <input type="email" autoComplete="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-brand-900 mb-1.5">Parol</label>
+          {mode !== 'reset' && <div>
+            <div className="flex justify-between items-baseline mb-1.5">
+              <label className="block text-sm font-semibold text-brand-900">Parol</label>
+              {mode === 'signin' && <button type="button" onClick={() => { setMode('reset'); setError(''); setInfo('') }} className="text-sm font-semibold text-brand-700 hover:text-brand-900">Parolni unutdingizmi?</button>}
+            </div>
             <input type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={8} className={inputCls} value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
+          </div>}
 
           <ErrorBox error={error} />
           {info && <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">{info}</div>}
 
           <button type="submit" disabled={loading} className={`${btnPrimary} w-full py-3`}>
-            {loading ? 'Kuting...' : mode === 'signin' ? 'Kirish' : "Ro'yxatdan o'tish"}
+            {loading ? 'Kuting...' : mode === 'signin' ? 'Kirish' : mode === 'reset' ? 'Havola yuborish' : "Ro'yxatdan o'tish"}
           </button>
 
           <button
@@ -84,7 +91,7 @@ export default function Login() {
             onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setInfo('') }}
             className="w-full text-sm text-brand-700 hover:text-brand-900 font-medium"
           >
-            {mode === 'signin' ? "Universitet xodimimisiz? Ro'yxatdan o'ting" : 'Akkauntingiz bormi? Kirish'}
+            {mode === 'signin' ? "Universitet xodimimisiz? Ro'yxatdan o'ting" : 'Kirish sahifasiga qaytish'}
           </button>
         </form>
       </div>
