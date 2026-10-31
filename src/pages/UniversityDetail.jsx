@@ -23,7 +23,7 @@ export default function UniversityDetail({ params }) {
   const TABS = [
     { id: 'students', label: 'Talabalar va arizalar' },
     { id: 'info', label: "Ma'lumotlar va yo'nalishlar" },
-    ...(isMaster ? [{ id: 'terms', label: 'Kelishuv va moliya' }] : []),
+    ...(isMaster ? [{ id: 'terms', label: 'Kelishuv va moliya' }, { id: 'access', label: 'Panelga kirish' }] : []),
   ]
 
   return (
@@ -57,6 +57,7 @@ export default function UniversityDetail({ params }) {
       {tab === 'students' && <AppTable data={data} initialQuery={params.get('q') || ''} />}
       {tab === 'info' && <InfoEditor u={u} editable={isMaster} />}
       {tab === 'terms' && isMaster && <Terms u={u} ledger={data.ledger} />}
+      {tab === 'access' && isMaster && <Access u={u} />}
     </div>
   )
 }
@@ -225,5 +226,83 @@ function L({ t, children, wide }) {
       <span className="block text-xs font-semibold text-brand-900 mb-1">{t}</span>
       {children}
     </label>
+  )
+}
+
+// Universitet xodimlariga admin panelga kirish huquqi (faqat master)
+function Access({ u }) {
+  const [email, setEmail] = useState('')
+  const [staff, setStaff] = useState([])
+  const [invites, setInvites] = useState([])
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function load() {
+    const [{ data: s }, { data: inv }] = await Promise.all([
+      supabase.rpc('list_staff'),
+      supabase.from('staff_invites').select('email, created_at').eq('university_id', u.id),
+    ])
+    const mine = (s || []).filter((r) => r.university_id === u.id)
+    setStaff(mine)
+    const joined = new Set(mine.map((r) => (r.email || '').toLowerCase()))
+    setInvites((inv || []).filter((i) => !joined.has(i.email)))
+  }
+  useEffect(() => { load() }, [u.id])
+
+  async function add(e) {
+    e.preventDefault()
+    setErr(''); setMsg(''); setBusy(true)
+    const mail = email.trim().toLowerCase()
+    const { error } = await supabase.rpc('assign_staff', { p_email: mail, p_role: 'university_admin', p_university: u.id })
+    setBusy(false)
+    if (error) return setErr(error.message)
+    setMsg(`${mail} qo'shildi. U admin panelga shu email bilan kiradi (akkaunti bo'lmasa, "Ro'yxatdan o'tish" orqali), keyin 2FA ni yoqadi.`)
+    setEmail('')
+    load()
+  }
+
+  async function remove(id, mail) {
+    if (!window.confirm(`${mail} ning panelga kirish huquqi olib tashlansinmi?`)) return
+    const { error } = await supabase.rpc('remove_staff', { p_user: id })
+    if (error) setErr(error.message); else load()
+  }
+
+  async function cancelInvite(mail) {
+    const { error } = await supabase.from('staff_invites').delete().eq('email', mail)
+    if (error) setErr(error.message); else load()
+  }
+
+  return (
+    <Card className="p-5 space-y-4">
+      <div>
+        <h2 className="text-lg font-bold text-brand-900">Admin panelga kirish</h2>
+        <p className="text-sm text-slate-600 mt-1">
+          Shu universitet xodimining emailini (gmail) qo'shing. U faqat Bosh panel, Talabalar, Arizalar va Talaba shartnomasi bo'limlarini,
+          faqat o'z universiteti bo'yicha ko'radi. Eslatma: "Ma'lumotlar" bo'limidagi "Qabul emaili" faqat saytda ko'rsatish uchun — kirish huquqini bermaydi.
+        </p>
+      </div>
+      <form onSubmit={add} className="flex flex-col sm:flex-row gap-3">
+        <input type="email" required placeholder="xodim@gmail.com" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <button disabled={busy} className={btnPrimary}>Kirish huquqini berish</button>
+      </form>
+      <ErrorBox error={err} />
+      {msg && <p className="text-sm font-semibold text-emerald-700">{msg}</p>}
+      <ul className="divide-y divide-brand-50 border border-brand-100 rounded-xl">
+        {staff.length === 0 && invites.length === 0 && <li className="p-3 text-sm text-slate-500">Hali hech kim qo'shilmagan</li>}
+        {staff.map((r) => (
+          <li key={r.user_id} className="p-3 flex items-center justify-between gap-3 text-sm">
+            <span><b className="text-brand-900">{r.email}</b> <span className="ml-2 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold">Faol</span></span>
+            <button onClick={() => remove(r.user_id, r.email)} className="font-semibold text-red-600 hover:text-red-700">Olib tashlash</button>
+          </li>
+        ))}
+        {invites.map((i) => (
+          <li key={i.email} className="p-3 flex items-center justify-between gap-3 text-sm">
+            <span><b className="text-brand-900">{i.email}</b> <span className="ml-2 px-2 py-0.5 rounded-lg bg-apricot-100 text-apricot-800 text-xs font-semibold">Ro'yxatdan o'tishi kutilmoqda</span></span>
+            <button onClick={() => cancelInvite(i.email)} className="font-semibold text-red-600 hover:text-red-700">Bekor qilish</button>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }
