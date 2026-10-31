@@ -7,6 +7,7 @@ import { ACTIVE, COMMISSION, money, mln } from '../lib/constants'
 import { Card, Stat, ErrorBox, inputCls, btnPrimary, btnSecondary } from '../components/ui'
 import AppTable from '../components/AppTable'
 import { go } from '../components/Shell'
+import NameEdit from '../components/NameEdit'
 
 export default function UniversityDetail({ params }) {
   const { isMaster, staff, uniById } = useAdmin()
@@ -232,6 +233,7 @@ function L({ t, children, wide }) {
 // Universitet xodimlariga admin panelga kirish huquqi (faqat master)
 function Access({ u }) {
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [staff, setStaff] = useState([])
   const [invites, setInvites] = useState([])
   const [err, setErr] = useState('')
@@ -241,7 +243,7 @@ function Access({ u }) {
   async function load() {
     const [{ data: s }, { data: inv }] = await Promise.all([
       supabase.rpc('list_staff'),
-      supabase.from('staff_invites').select('email, created_at').eq('university_id', u.id),
+      supabase.from('staff_invites').select('email, full_name, created_at').eq('university_id', u.id),
     ])
     const mine = (s || []).filter((r) => r.university_id === u.id)
     setStaff(mine)
@@ -254,11 +256,11 @@ function Access({ u }) {
     e.preventDefault()
     setErr(''); setMsg(''); setBusy(true)
     const mail = email.trim().toLowerCase()
-    const { error } = await supabase.rpc('assign_staff', { p_email: mail, p_role: 'university_admin', p_university: u.id })
+    const { error } = await supabase.rpc('assign_staff', { p_email: mail, p_role: 'university_admin', p_university: u.id, p_full_name: name })
     setBusy(false)
     if (error) return setErr(error.message)
     setMsg(`${mail} qo'shildi. U admin panelga shu email bilan kiradi (akkaunti bo'lmasa, "Ro'yxatdan o'tish" orqali), keyin 2FA ni yoqadi.`)
-    setEmail('')
+    setEmail(''); setName('')
     load()
   }
 
@@ -283,6 +285,7 @@ function Access({ u }) {
         </p>
       </div>
       <form onSubmit={add} className="flex flex-col sm:flex-row gap-3">
+        <input required placeholder="Ism familiya" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
         <input type="email" required placeholder="xodim@gmail.com" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} />
         <button disabled={busy} className={btnPrimary}>Kirish huquqini berish</button>
       </form>
@@ -292,13 +295,13 @@ function Access({ u }) {
         {staff.length === 0 && invites.length === 0 && <li className="p-3 text-sm text-slate-500">Hali hech kim qo'shilmagan</li>}
         {staff.map((r) => (
           <li key={r.user_id} className="p-3 flex items-center justify-between gap-3 text-sm">
-            <span><b className="text-brand-900">{r.email}</b> <span className="ml-2 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold">Faol</span></span>
+            <span className="min-w-0"><NameEdit user={r.user_id} name={r.full_name} onSaved={load} /><span className="text-xs text-slate-500">{r.email}</span> <span className="ml-2 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold">Faol</span></span>
             <button onClick={() => remove(r.user_id, r.email)} className="font-semibold text-red-600 hover:text-red-700">Olib tashlash</button>
           </li>
         ))}
         {invites.map((i) => (
           <li key={i.email} className="p-3 flex items-center justify-between gap-3 text-sm">
-            <span><b className="text-brand-900">{i.email}</b> <span className="ml-2 px-2 py-0.5 rounded-lg bg-apricot-100 text-apricot-800 text-xs font-semibold">Ro'yxatdan o'tishi kutilmoqda</span></span>
+            <span><b className="text-brand-900">{i.full_name || i.email}</b> <span className="text-xs text-slate-500">{i.full_name ? i.email : ''}</span> <span className="ml-2 px-2 py-0.5 rounded-lg bg-apricot-100 text-apricot-800 text-xs font-semibold">Ro'yxatdan o'tishi kutilmoqda</span></span>
             <button onClick={() => cancelInvite(i.email)} className="font-semibold text-red-600 hover:text-red-700">Bekor qilish</button>
           </li>
         ))}

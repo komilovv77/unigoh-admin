@@ -3,12 +3,14 @@ import { supabase } from '../lib/supabase'
 import { useAdmin } from '../App'
 import { Card, PageTitle, ErrorBox, Empty, inputCls, btnPrimary } from '../components/ui'
 import { date } from '../lib/constants'
+import NameEdit from '../components/NameEdit'
 
 export default function Staff() {
   const { universities, uniById, session } = useAdmin()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [role, setRole] = useState('university_admin')
   const [uni, setUni] = useState('')
   const [error, setError] = useState('')
@@ -27,10 +29,10 @@ export default function Staff() {
   async function assign(e) {
     e.preventDefault()
     setError(''); setOk('')
-    const { error } = await supabase.rpc('assign_staff', { p_email: email, p_role: role, p_university: role === 'master' ? null : uni })
+    const { error } = await supabase.rpc('assign_staff', { p_email: email, p_role: role, p_university: role === 'master' ? null : uni, p_full_name: name })
     if (error) return setError(error.message)
     setOk(`${email} biriktirildi. Hali ro'yxatdan o'tmagan bo'lsa, o'tishi bilan panel ochiladi.`)
-    setEmail('')
+    setEmail(''); setName('')
     load()
   }
 
@@ -56,11 +58,15 @@ export default function Staff() {
       <Card className="p-5">
         <h2 className="font-bold text-brand-900">Xodim biriktirish</h2>
         <ol className="mt-2 text-sm text-slate-600 list-decimal pl-5 space-y-0.5">
-          <li>Xodimning emailini yozib, rolini va universitetini tanlang.</li>
+          <li>Xodimning ismi va emailini yozib, rolini va universitetini tanlang.</li>
           <li>U admin panelda shu email bilan ro'yxatdan o'tadi (yoki allaqachon akkaunti bo'lsa, shunchaki kiradi).</li>
           <li>U qayta kirganda faqat o'z universiteti arizalarini ko'radi.</li>
         </ol>
-        <form onSubmit={assign} className="mt-4 grid sm:grid-cols-[1fr_200px_1fr_auto] gap-3 items-end">
+        <form onSubmit={assign} className="mt-4 grid sm:grid-cols-2 lg:grid-cols-[1fr_1fr_180px_1fr_auto] gap-3 items-end">
+          <label>
+            <span className="block text-xs font-semibold text-brand-900 mb-1">Ism familiya</span>
+            <input required className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
           <label>
             <span className="block text-xs font-semibold text-brand-900 mb-1">Email</span>
             <input type="email" required className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -100,7 +106,7 @@ export default function Staff() {
               {rows.map((r) => (
                 <tr key={r.user_id} className="border-t border-brand-50">
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-brand-900">{r.full_name || '—'}</p>
+                    <NameEdit user={r.user_id} name={r.full_name} onSaved={load} />
                     <p className="text-xs text-slate-500">{r.email}</p>
                   </td>
                   <td className="px-4 py-3">
