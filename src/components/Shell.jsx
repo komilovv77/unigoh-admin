@@ -13,16 +13,17 @@ import StudentDetail from '../pages/StudentDetail'
 import Staff from '../pages/Staff'
 import Contracts from '../pages/Contracts'
 import Sms from '../pages/Sms'
+import UniContracts from '../pages/UniContracts'
 
 // who: 'all' | 'master' | 'uni'
 const NAV = [
   { id: 'dashboard', label: 'Bosh panel', icon: LayoutDashboard, who: 'all', Page: Dashboard },
   { id: 'universities', label: 'Universitetlar', icon: Building2, who: 'master', Page: Universities },
-  { id: 'university', label: 'Universitetim', icon: Building2, who: 'uni', Page: UniversityDetail },
   { id: 'students', label: 'Talabalar', icon: GraduationCap, who: 'all', Page: Students },
   { id: 'applications', label: 'Arizalar', icon: FileText, who: 'all', Page: Applications },
   { id: 'finance', label: 'Moliya', icon: Wallet, who: 'master', Page: Finance },
   { id: 'contracts', label: 'Talaba shartnomasi', icon: FileSignature, who: 'master', Page: Contracts },
+  { id: 'contracts', label: 'Talaba shartnomasi', icon: FileSignature, who: 'uni', Page: UniContracts },
   { id: 'sms', label: 'SMS jurnali', icon: MessageSquare, who: 'master', Page: Sms },
   { id: 'staff', label: 'Xodimlar', icon: UserCog, who: 'master', Page: Staff },
 ]
