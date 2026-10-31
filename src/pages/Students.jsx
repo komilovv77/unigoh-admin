@@ -8,7 +8,7 @@ import { Card, PageTitle, ErrorBox, Empty, inputCls, StatusBadge } from '../comp
 import { go } from '../components/Shell'
 
 export default function Students({ params }) {
-  const { isMaster, uniById } = useAdmin()
+  const { isMaster, uniById, staff } = useAdmin()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -22,7 +22,9 @@ export default function Students({ params }) {
       setLoading(true)
       const [{ data: dir, error }, { data: apps }] = await Promise.all([
         supabase.rpc('student_directory'),
-        supabase.from('applications').select('id, student_id, university_id, status, created_at').order('created_at', { ascending: false }),
+        (isMaster ? supabase.from('applications').select('id, student_id, university_id, status, created_at')
+          : supabase.from('applications').select('id, student_id, university_id, status, created_at').eq('university_id', staff.university_id))
+          .order('created_at', { ascending: false }),
       ])
       if (error) { setError(error.message); setLoading(false); return }
       const profiles = await loadProfiles((dir || []).map((d) => d.id))

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import { useAdmin } from '../App'
 
 // Arizalar + talaba profillari (+ master uchun komissiya).
 // RLS tufayli OTM xodimi faqat o'z universiteti arizalarini va talabalarini oladi,
@@ -11,12 +12,17 @@ export function useApplications({ isMaster = false, universityId = null, student
   const [ledger, setLedger] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Universitet xodimi faqat o'z universiteti arizalarini ko'radi (hatto shu akkaunt
+  // boshqa joyga talaba sifatida ariza bergan bo'lsa ham)
+  const { staff } = useAdmin()
+  const ownUni = isMaster ? null : staff?.university_id || '__none__'
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     let q = supabase.from('applications').select('*').order('created_at', { ascending: false })
     if (universityId) q = q.eq('university_id', universityId)
+    if (ownUni) q = q.eq('university_id', ownUni)
     if (studentId) q = q.eq('student_id', studentId)
     const [{ data: a, error: e1 }, { data: f }, l] = await Promise.all([
       q,
@@ -34,7 +40,7 @@ export function useApplications({ isMaster = false, universityId = null, student
     setFlags(Object.fromEntries((f || []).map((x) => [x.id, x.flag])))
     setLedger(Object.fromEntries((l.data || []).map((x) => [x.application_id, x])))
     setLoading(false)
-  }, [isMaster, universityId, studentId])
+  }, [isMaster, universityId, studentId, ownUni])
 
   useEffect(() => { load() }, [load])
 

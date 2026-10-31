@@ -5,12 +5,14 @@ import { loadProfiles } from '../lib/data'
 import { dateTime } from '../lib/constants'
 import { Card, PageTitle, ErrorBox, Empty, StatusBadge, btnSecondary } from '../components/ui'
 import { go } from '../components/Shell'
+import { useAdmin } from '../App'
 
 // Universitet xodimi uchun: o'z universitetiga qabul qilingan talabalarning
 // UniGoh bilan roziligi/shartnomasi holati va amaldagi shartnoma matni (faqat o'qish).
 const STAGES = ['ADMITTED', 'SENT', 'CONTRACT', 'ENROLLED']
 
 export default function UniContracts() {
+  const { staff } = useAdmin()
   const [rows, setRows] = useState([])
   const [template, setTemplate] = useState(null)
   const [showText, setShowText] = useState(false)
@@ -21,7 +23,7 @@ export default function UniContracts() {
     (async () => {
       const [{ data: apps, error }, { data: tpl }] = await Promise.all([
         supabase.from('applications').select('id, code, student_id, program_name, status, forwarded_at, updated_at')
-          .in('status', STAGES).order('updated_at', { ascending: false }),
+          .eq('university_id', staff.university_id).in('status', STAGES).order('updated_at', { ascending: false }),
         supabase.from('contract_templates').select('version, title_uz, body_uz').eq('is_active', true).maybeSingle(),
       ])
       if (error) { setError(error.message); setLoading(false); return }
