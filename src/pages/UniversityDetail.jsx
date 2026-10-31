@@ -63,7 +63,9 @@ export default function UniversityDetail({ params }) {
 
 const DETAIL_FIELDS = [
   ['shortDescription', 'Qisqa tavsif (saytda ko\'rinadi)', 'textarea'],
+  ['shortDescription_ru', 'Краткое описание (на русском)', 'textarea'],
   ['grantOpportunity', 'Grant imkoniyati', 'text'],
+  ['grantOpportunity_ru', 'Грант (на русском)', 'text'],
   ['applicationDeadline', 'Ariza muddati', 'date'],
   ['city', 'Manzil', 'text'],
   ['website', 'Veb-sayt', 'url'],
@@ -140,8 +142,11 @@ function InfoEditor({ u, editable }) {
         {programs.length === 0 && <p className="text-sm text-slate-500">Yo'nalishlar qo'shilmagan. Talabalar ariza berishi uchun kamida bittasi kerak.</p>}
         <div className="space-y-2">
           {programs.map((p, i) => (
-            <div key={p.id || i} className="grid grid-cols-2 sm:grid-cols-[1fr_120px_100px_160px_auto] gap-2 items-center">
-              <input disabled={dis} className={`${inputCls} col-span-2 sm:col-span-1`} placeholder="Yo'nalish nomi" value={p.name || ''} onChange={(e) => setP(i, 'name', e.target.value)} />
+            <div key={p.id || i} className="grid grid-cols-2 sm:grid-cols-[1fr_120px_100px_160px_auto] gap-2 items-start pb-3 border-b border-brand-50 last:border-0">
+              <div className="col-span-2 sm:col-span-1 space-y-1.5">
+                <input disabled={dis} className={inputCls} placeholder="Yo'nalish nomi" value={p.name || ''} onChange={(e) => setP(i, 'name', e.target.value)} />
+                <input disabled={dis} className={inputCls} placeholder="Название (рус.)" value={p.name_ru || ''} onChange={(e) => setP(i, 'name_ru', e.target.value)} />
+              </div>
               <input disabled={dis} className={inputCls} placeholder="Daraja" value={p.degree || ''} onChange={(e) => setP(i, 'degree', e.target.value)} />
               <input disabled={dis} className={inputCls} placeholder="Muddat" value={p.duration || ''} onChange={(e) => setP(i, 'duration', e.target.value)} />
               <input disabled={dis} className={inputCls} inputMode="numeric" placeholder="Yillik narx, so'm" value={p.tuition ?? ''} onChange={(e) => setP(i, 'tuition', e.target.value.replace(/\D/g, ''))} />

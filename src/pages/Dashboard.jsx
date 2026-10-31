@@ -21,8 +21,9 @@ export default function Dashboard() {
   const paid = L.filter((r) => r.status === 'paid').reduce((s, r) => s + Number(r.amount || 0), 0)
   const flagCount = Object.keys(flags).length
 
+  const stages = isMaster ? FUNNEL : FUNNEL.filter((s) => s !== 'NEW')
   const reached = (st) => apps.filter((a) => FUNNEL.indexOf(a.status) >= FUNNEL.indexOf(st)).length
-  const funnel = FUNNEL.map((st) => ({ st, n: reached(st) }))
+  const funnel = stages.map((st) => ({ st, n: reached(st) }))
   const max = Math.max(1, funnel[0].n)
 
   const perUni = isMaster ? universities.map((u) => {

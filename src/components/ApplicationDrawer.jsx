@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { AlertTriangle, X, CheckCircle2, ExternalLink } from 'lucide-react'
+import { AlertTriangle, X, CheckCircle2, ExternalLink, Send, FileSignature } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAdmin } from '../App'
 import { STATUSES, STATUS, COMMISSION, money, dateTime } from '../lib/constants'
@@ -16,6 +16,23 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [ok, setOk] = useState(false)
+  const [agreement, setAgreement] = useState(undefined)
+  const [forwarding, setForwarding] = useState(false)
+
+  useEffect(() => {
+    supabase.from('student_agreements').select('template_version, full_name, signed_at, lang, signature_path, text_hash')
+      .eq('student_id', app.student_id).order('signed_at', { ascending: false }).limit(1)
+      .then(({ data }) => setAgreement(data?.[0] || null))
+  }, [app.student_id])
+
+  async function forward() {
+    setError('')
+    setForwarding(true)
+    const { error } = await supabase.from('applications').update({ status: 'SENT' }).eq('id', app.id)
+    setForwarding(false)
+    if (error) { setError(error.message); return }
+    onSaved()
+  }
 
   useEffect(() => {
     setForm(initial(app))
@@ -106,10 +123,36 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
           </Card>
 
           <Card className="p-5">
+            <h3 className="flex items-center gap-2 font-bold text-brand-900"><FileSignature className="w-4 h-4" /> UniGoh–talaba shartnomasi</h3>
+            {agreement === undefined ? <p className="mt-2 text-sm text-slate-500">Yuklanmoqda...</p> : agreement ? (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+                <p className="text-emerald-700 font-semibold inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" /> Imzolangan: {agreement.full_name}, {dateTime(agreement.signed_at)} ({agreement.template_version}-versiya, {agreement.lang === 'ru' ? 'ruscha' : "o'zbekcha"})
+                </p>
+                <button type="button" onClick={() => openStored(agreement.signature_path)} className="inline-flex items-center gap-1 font-semibold text-brand-700 hover:text-brand-900">
+                  Imzoni ko'rish <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-apricot-800">Talaba hali shartnomani imzolamagan.</p>
+            )}
+
+            {isMaster && app.status === 'NEW' && (
+              <div className="mt-4 p-4 rounded-xl bg-brand-50 border border-brand-100 space-y-3">
+                <p className="text-sm text-brand-900">Hujjatlar va shartnomani tekshirgach, arizani universitetga yuboring. Universitet uni shundan keyingina ko'radi, talabaga esa xabar boradi.</p>
+                <button type="button" onClick={forward} disabled={forwarding || !agreement} className={`${btnPrimary} w-full py-3`}>
+                  <Send className="w-4 h-4" /> {forwarding ? 'Yuborilmoqda...' : 'Universitetga yuborish'}
+                </button>
+                {!agreement && <p className="text-xs text-slate-600">Shartnoma imzolanmaguncha yuborib bo'lmaydi.</p>}
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-5">
             <form onSubmit={save} className="space-y-4">
               <h3 className="font-bold text-brand-900">Holat</h3>
               <div className="grid grid-cols-2 gap-2">
-                {STATUSES.map((s) => (
+                {STATUSES.filter((s) => isMaster || s.value !== 'NEW').map((s) => (
                   <button
                     type="button"
                     key={s.value}
@@ -125,7 +168,7 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
 
               {(form.status === 'EXAM' || form.exam_date) && (
                 <div>
-                  <label className="block text-sm font-semibold text-brand-900 mb-1.5">Imtihon sanasi va vaqti</label>
+                  <label className="block text-sm font-semibold text-brand-900 mb-1.5">Suhbat yoki imtihon sanasi va vaqti</label>
                   <input type="datetime-local" className={inputCls} value={form.exam_date} onChange={set('exam_date')} />
                 </div>
               )}
@@ -141,8 +184,8 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-brand-900 mb-1.5">Izoh (talabaga ham ko'rinadi)</label>
-                <textarea rows={2} className={inputCls} value={form.note} onChange={set('note')} placeholder="Masalan: pasport nusxasi yetishmaydi" />
+                <label className="block text-sm font-semibold text-brand-900 mb-1.5">Talabaga xabar (saytda va Telegram'da ko'rinadi)</label>
+                <textarea rows={2} className={inputCls} value={form.note} onChange={set('note')} placeholder="Masalan: suhbatga pasport aslini olib keling" />
               </div>
 
               {isMaster && ledgerRow && (
@@ -184,19 +227,21 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
   )
 }
 
-const DOC_LABEL = { passport: 'Pasport / ID karta', diploma: 'Shahodatnoma / attestat', certificate: 'Sertifikat', other: 'Boshqa hujjat' }
+const DOC_LABEL = { passport: 'Pasport / ID karta', diploma: 'Shahodatnoma / attestat', certificate: 'Sertifikat', portfolio: 'Portfolio', other: 'Boshqa hujjat' }
 
-async function openStored(path) {
+export async function openStored(path) {
+  const win = window.open('', '_blank')
   const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 300)
-  if (error) { window.alert("Faylni ochib bo'lmadi: " + error.message); return }
-  window.open(data.signedUrl, '_blank', 'noopener')
+  if (error) { win?.close(); window.alert("Faylni ochib bo'lmadi: " + error.message); return }
+  if (win) win.location.href = data.signedUrl
+  else window.location.href = data.signedUrl
 }
 
 export function Documents({ profile, certs }) {
   const list = certs ?? (Array.isArray(profile.certificates) ? profile.certificates.filter((c) => c && (c.title || c.file_url)) : [])
   const stored = Array.isArray(profile.documents) ? profile.documents : []
   const docs = [
-    ...stored.map((d) => ({ label: `${DOC_LABEL[d.kind] || 'Hujjat'}: ${d.name}`, path: d.path })),
+    ...stored.map((d) => ({ label: `${DOC_LABEL[d.kind] || 'Hujjat'}: ${d.title ? `${d.title}${d.score ? ' — ' + d.score : ''}` : d.name}`, path: d.path })),
     profile.diploma_url && { label: 'Shahodatnoma / attestat', url: profile.diploma_url },
     profile.portfolio_url && { label: 'Portfolio', url: profile.portfolio_url },
     ...list.map((c) => ({ label: `${c.title || 'Sertifikat'}${c.score ? ' — ' + c.score : ''}`, url: c.file_url })),
