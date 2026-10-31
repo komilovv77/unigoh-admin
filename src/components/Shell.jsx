@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { LayoutDashboard, FileText, Wallet, Building2, UserCog, LogOut, Menu, X, Search, GraduationCap, FileSignature } from 'lucide-react'
+import { LayoutDashboard, FileText, Wallet, Building2, UserCog, LogOut, Menu, X, Search, GraduationCap, FileSignature, MessageSquare } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAdmin } from '../App'
 import { LogoMark } from './ui'
@@ -12,6 +12,7 @@ import Students from '../pages/Students'
 import StudentDetail from '../pages/StudentDetail'
 import Staff from '../pages/Staff'
 import Contracts from '../pages/Contracts'
+import Sms from '../pages/Sms'
 
 // who: 'all' | 'master' | 'uni'
 const NAV = [
@@ -22,6 +23,7 @@ const NAV = [
   { id: 'applications', label: 'Arizalar', icon: FileText, who: 'all', Page: Applications },
   { id: 'finance', label: 'Moliya', icon: Wallet, who: 'master', Page: Finance },
   { id: 'contracts', label: 'Talaba shartnomasi', icon: FileSignature, who: 'master', Page: Contracts },
+  { id: 'sms', label: 'SMS jurnali', icon: MessageSquare, who: 'master', Page: Sms },
   { id: 'staff', label: 'Xodimlar', icon: UserCog, who: 'master', Page: Staff },
 ]
 // Menyuda ko'rinmaydigan ichki sahifalar

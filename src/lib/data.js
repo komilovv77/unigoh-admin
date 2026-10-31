@@ -44,9 +44,10 @@ export function useApplications({ isMaster = false, universityId = null, student
 export const PROFILE_COLS =
   'id, full_name, phone, region, bio, school_name, diploma_url, test_score, certificates, portfolio_url, documents, updated_at'
 
+// Profillar: universitet xodimiga telefon talaba rozilik bergandan keyingina ko'rinadi
 export async function loadProfiles(ids) {
   if (!ids.length) return {}
-  const { data } = await supabase.from('profiles').select(PROFILE_COLS).in('id', ids)
+  const { data } = await supabase.rpc('applicant_profiles', { p_ids: ids })
   return Object.fromEntries((data || []).map((x) => [x.id, x]))
 }
 

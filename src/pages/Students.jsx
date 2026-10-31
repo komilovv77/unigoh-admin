@@ -76,7 +76,9 @@ export default function Students({ params }) {
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block font-semibold text-brand-900 truncate">{r.profile.full_name || 'Ism kiritilmagan'}</span>
-                    <span className="block text-xs text-slate-500 truncate">{r.profile.phone || '—'} · {r.email} · {r.profile.region || '—'}</span>
+                    <span className="block text-xs text-slate-500 truncate">
+                      {r.contact_visible === false ? 'Aloqa ma\'lumotlari rozilikdan keyin ochiladi' : `${r.profile.phone || '—'} · ${r.email || '—'}`} · {r.profile.region || '—'}
+                    </span>
                   </span>
                   <span className="hidden md:flex flex-wrap gap-1.5 justify-end max-w-xs">
                     {r.apps.length === 0

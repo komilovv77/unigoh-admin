@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { AlertTriangle, X, CheckCircle2, ExternalLink, Send, FileSignature } from 'lucide-react'
+import { AlertTriangle, X, CheckCircle2, ExternalLink, FileSignature } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAdmin } from '../App'
-import { STATUSES, STATUS, COMMISSION, money, dateTime } from '../lib/constants'
+import { STATUSES, STATUS, COMMISSION, money, dateTime, allowedStatuses } from '../lib/constants'
 import { Card, ErrorBox, inputCls, btnPrimary, btnSecondary } from './ui'
 import { go } from './Shell'
 
@@ -17,7 +17,6 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
   const [error, setError] = useState('')
   const [ok, setOk] = useState(false)
   const [agreement, setAgreement] = useState(undefined)
-  const [forwarding, setForwarding] = useState(false)
 
   useEffect(() => {
     supabase.from('student_agreements').select('template_version, full_name, signed_at, lang, signature_path, text_hash')
@@ -25,14 +24,6 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
       .then(({ data }) => setAgreement(data?.[0] || null))
   }, [app.student_id])
 
-  async function forward() {
-    setError('')
-    setForwarding(true)
-    const { error } = await supabase.from('applications').update({ status: 'SENT' }).eq('id', app.id)
-    setForwarding(false)
-    if (error) { setError(error.message); return }
-    onSaved()
-  }
 
   useEffect(() => {
     setForm(initial(app))
@@ -115,7 +106,7 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
               <Field k="Universitet" v={uni?.name} />
               <Field k="Yo'nalish" v={app.program_name} />
               {program?.tuition && <Field k="Yo'nalish narxi" v={money(program.tuition)} />}
-              <Field k="Telefon" v={profile.phone} />
+              <Field k="Telefon" v={profile.phone || (profile.contact_visible === false ? 'Talaba rozilik bergach ochiladi' : null)} />
               <Field k="Viloyat" v={profile.region} />
               <Field k="Ariza sanasi" v={dateTime(app.created_at)} />
             </dl>
@@ -123,7 +114,8 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
           </Card>
 
           <Card className="p-5">
-            <h3 className="flex items-center gap-2 font-bold text-brand-900"><FileSignature className="w-4 h-4" /> UniGoh–talaba shartnomasi</h3>
+            <h3 className="flex items-center gap-2 font-bold text-brand-900"><FileSignature className="w-4 h-4" /> Talaba roziligi va shartnoma</h3>
+            {app.forwarded_at && <p className="mt-2 text-sm font-semibold text-apricot-800">Talaba rozilik bergan: {dateTime(app.forwarded_at)}. Iltimos, talaba bilan bog'laning.</p>}
             {agreement === undefined ? <p className="mt-2 text-sm text-slate-500">Yuklanmoqda...</p> : agreement ? (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
                 <p className="text-emerald-700 font-semibold inline-flex items-center gap-1.5">
@@ -134,25 +126,16 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
                 </button>
               </div>
             ) : (
-              <p className="mt-2 text-sm text-apricot-800">Talaba hali shartnomani imzolamagan.</p>
+              <p className="mt-2 text-sm text-slate-600">Talaba hali imzolamagan. Universitet qabul qilgach, talaba saytda rozilik beradi (shartnoma e'lon qilingan bo'lsa — imzolaydi) va ariza avtomatik ravishda «Talaba rozi — bog'laning» holatiga o'tadi.</p>
             )}
 
-            {isMaster && app.status === 'NEW' && (
-              <div className="mt-4 p-4 rounded-xl bg-brand-50 border border-brand-100 space-y-3">
-                <p className="text-sm text-brand-900">Hujjatlar va shartnomani tekshirgach, arizani universitetga yuboring. Universitet uni shundan keyingina ko'radi, talabaga esa xabar boradi.</p>
-                <button type="button" onClick={forward} disabled={forwarding || !agreement} className={`${btnPrimary} w-full py-3`}>
-                  <Send className="w-4 h-4" /> {forwarding ? 'Yuborilmoqda...' : 'Universitetga yuborish'}
-                </button>
-                {!agreement && <p className="text-xs text-slate-600">Shartnoma imzolanmaguncha yuborib bo'lmaydi.</p>}
-              </div>
-            )}
           </Card>
 
           <Card className="p-5">
             <form onSubmit={save} className="space-y-4">
               <h3 className="font-bold text-brand-900">Holat</h3>
               <div className="grid grid-cols-2 gap-2">
-                {STATUSES.filter((s) => isMaster || s.value !== 'NEW').map((s) => (
+                {STATUSES.filter((s) => allowedStatuses(app, isMaster).includes(s.value)).map((s) => (
                   <button
                     type="button"
                     key={s.value}

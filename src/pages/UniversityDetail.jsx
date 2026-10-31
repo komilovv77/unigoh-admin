@@ -204,7 +204,7 @@ function Terms({ u, ledger }) {
           <div className="grid sm:grid-cols-3 gap-3">
             <L t="UniGoh ulushi, % (1-yil kontraktidan)"><input type="number" step="0.1" min="0" max="100" className={inputCls} value={form.commission_rate ?? ''} onChange={(e) => setForm({ ...form, commission_rate: e.target.value })} /></L>
             <L t="Mas'ul shaxs"><input className={inputCls} value={form.contact_name || ''} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} /></L>
-            <L t="Telefon"><input className={inputCls} value={form.contact_phone || ''} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} /></L>
+            <L t="Telefon (yangi talaba haqida SMS shu raqamga boradi)"><input className={inputCls} placeholder="+998 90 123 45 67" value={form.contact_phone || ''} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} /></L>
           </div>
           <L t="Izoh (shartnoma raqami, to'lov tartibi...)"><textarea rows={2} className={inputCls} value={form.notes || ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></L>
           <p className="text-xs text-slate-500">Foiz o'zgarsa, faqat bundan keyin o'qishga kirganlarga qo'llanadi.</p>

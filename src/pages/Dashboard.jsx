@@ -1,5 +1,5 @@
 import React from 'react'
-import { AlertTriangle, ArrowRight } from 'lucide-react'
+import { AlertTriangle, ArrowRight, PhoneCall } from 'lucide-react'
 import { useAdmin } from '../App'
 import { useApplications } from '../lib/data'
 import { FUNNEL, ACTIVE, STATUS, mln } from '../lib/constants'
@@ -20,6 +20,7 @@ export default function Dashboard() {
   const open = L.filter((r) => r.status !== 'paid').reduce((s, r) => s + Number(r.amount || 0), 0)
   const paid = L.filter((r) => r.status === 'paid').reduce((s, r) => s + Number(r.amount || 0), 0)
   const flagCount = Object.keys(flags).length
+  const sentCount = apps.filter((a) => a.status === 'SENT').length
 
   const stages = isMaster ? FUNNEL : FUNNEL.filter((s) => s !== 'NEW')
   const reached = (st) => apps.filter((a) => FUNNEL.indexOf(a.status) >= FUNNEL.indexOf(st)).length
@@ -40,6 +41,17 @@ export default function Dashboard() {
     <div className="space-y-6">
       <PageTitle title="Bosh panel" subtitle={isMaster ? "Butun platforma bo'yicha" : uniById[staff.university_id]?.name} />
       <ErrorBox error={error} />
+
+      {sentCount > 0 && (
+        <button onClick={() => go('applications', { status: 'SENT' })}
+          className="w-full flex items-center justify-between gap-3 p-4 rounded-2xl bg-brand-800 text-white text-left">
+          <span className="flex items-center gap-3 font-semibold">
+            <PhoneCall className="w-5 h-5 shrink-0 text-apricot-300" />
+            {sentCount} ta talaba UniGoh orqali yuborildi va rozilik berdi — ular bilan bog'laning
+          </span>
+          <ArrowRight className="w-5 h-5 shrink-0" />
+        </button>
+      )}
 
       {flagCount > 0 && (
         <button onClick={() => go('applications', { flag: '1' })}

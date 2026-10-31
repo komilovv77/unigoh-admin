@@ -40,6 +40,7 @@ export default function StudentDetail({ params }) {
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
               {p.phone && <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1 hover:text-brand-800"><Phone className="w-3.5 h-3.5" /> {p.phone}</a>}
               {email && <a href={`mailto:${email}`} className="inline-flex items-center gap-1 hover:text-brand-800"><Mail className="w-3.5 h-3.5" /> {email}</a>}
+              {p.contact_visible === false && <span className="text-apricot-800 font-medium">Telefon va email talaba qabul taklifiga rozilik bergach ochiladi</span>}
               {p.region && <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {p.region}</span>}
               {p.school_name && <span className="inline-flex items-center gap-1"><School className="w-3.5 h-3.5" /> {p.school_name}</span>}
             </div>
