@@ -210,8 +210,8 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
   )
 }
 
-const DOC_LABEL = { passport: 'Pasport / ID karta', diploma: 'Shahodatnoma / attestat', dtm: 'DTM / imtihon natijasi', certificate: 'Sertifikat', portfolio: 'Portfolio', other: 'Boshqa hujjat' }
-const DOC_ORDER = ['passport', 'diploma', 'dtm', 'certificate', 'portfolio', 'other']
+const DOC_LABEL = { enrollment: "O'qishga kirganlik dalili (shartnoma / guvohnoma)", passport: 'Pasport / ID karta', diploma: 'Shahodatnoma / attestat', dtm: 'DTM / imtihon natijasi', certificate: 'Sertifikat', portfolio: 'Portfolio', other: 'Boshqa hujjat' }
+const DOC_ORDER = ['enrollment', 'passport', 'diploma', 'dtm', 'certificate', 'portfolio', 'other']
 
 export async function openStored(path) {
   const win = window.open('', '_blank')
@@ -232,11 +232,13 @@ export function Documents({ profile, certs }) {
     profile.portfolio_url && { label: 'Portfolio (eski havola)', url: profile.portfolio_url },
     ...list.map((c) => ({ label: `${c.title || 'Sertifikat'}${c.score ? ' — ' + c.score : ''}${c.file_url ? ' (eski havola)' : ''}`, url: c.file_url })),
   ].filter(Boolean)
-  const missing = ['passport', 'diploma'].filter((k) => !stored.some((d) => d.kind === k))
+  const hiddenPassport = profile.contact_visible === false
+  const missing = ['passport', 'diploma'].filter((k) => !(k === 'passport' && hiddenPassport) && !stored.some((d) => d.kind === k))
 
   return (
     <div className="mt-4">
       <p className="text-xs font-semibold text-slate-500 mb-2">Hujjatlar</p>
+      {hiddenPassport && <p className="mb-2 text-xs text-slate-500">Pasport talaba rozilik bergandan keyin ochiladi.</p>}
       {missing.length > 0 && <p className="mb-2 text-xs font-semibold text-apricot-800">Yuklanmagan: {missing.map((k) => DOC_LABEL[k]).join(', ')}</p>}
       {docs.length === 0 ? <p className="text-sm text-slate-500">Hujjat yuklanmagan</p> : (
         <ul className="space-y-1.5">
