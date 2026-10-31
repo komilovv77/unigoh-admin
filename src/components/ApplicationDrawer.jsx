@@ -210,7 +210,8 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
   )
 }
 
-const DOC_LABEL = { passport: 'Pasport / ID karta', diploma: 'Shahodatnoma / attestat', certificate: 'Sertifikat', portfolio: 'Portfolio', other: 'Boshqa hujjat' }
+const DOC_LABEL = { passport: 'Pasport / ID karta', diploma: 'Shahodatnoma / attestat', dtm: 'DTM / imtihon natijasi', certificate: 'Sertifikat', portfolio: 'Portfolio', other: 'Boshqa hujjat' }
+const DOC_ORDER = ['passport', 'diploma', 'dtm', 'certificate', 'portfolio', 'other']
 
 export async function openStored(path) {
   const win = window.open('', '_blank')
@@ -224,20 +225,24 @@ export function Documents({ profile, certs }) {
   const list = certs ?? (Array.isArray(profile.certificates) ? profile.certificates.filter((c) => c && (c.title || c.file_url)) : [])
   const stored = Array.isArray(profile.documents) ? profile.documents : []
   const docs = [
-    ...stored.map((d) => ({ label: `${DOC_LABEL[d.kind] || 'Hujjat'}: ${d.title ? `${d.title}${d.score ? ' — ' + d.score : ''}` : d.name}`, path: d.path })),
-    profile.diploma_url && { label: 'Shahodatnoma / attestat', url: profile.diploma_url },
-    profile.portfolio_url && { label: 'Portfolio', url: profile.portfolio_url },
-    ...list.map((c) => ({ label: `${c.title || 'Sertifikat'}${c.score ? ' — ' + c.score : ''}`, url: c.file_url })),
+    ...[...stored].sort((a, b) => DOC_ORDER.indexOf(a.kind) - DOC_ORDER.indexOf(b.kind))
+      .map((d) => ({ label: `${DOC_LABEL[d.kind] || 'Hujjat'}: ${d.title ? `${d.title}${d.score ? ' — ' + d.score : ''}` : d.name}`, path: d.path, type: d.type })),
+    // Eski profillardan qolgan havolalar (yangi talabalarda bo'lmaydi)
+    profile.diploma_url && { label: 'Shahodatnoma / attestat (eski havola)', url: profile.diploma_url },
+    profile.portfolio_url && { label: 'Portfolio (eski havola)', url: profile.portfolio_url },
+    ...list.map((c) => ({ label: `${c.title || 'Sertifikat'}${c.score ? ' — ' + c.score : ''}${c.file_url ? ' (eski havola)' : ''}`, url: c.file_url })),
   ].filter(Boolean)
+  const missing = ['passport', 'diploma'].filter((k) => !stored.some((d) => d.kind === k))
 
   return (
     <div className="mt-4">
       <p className="text-xs font-semibold text-slate-500 mb-2">Hujjatlar</p>
+      {missing.length > 0 && <p className="mb-2 text-xs font-semibold text-apricot-800">Yuklanmagan: {missing.map((k) => DOC_LABEL[k]).join(', ')}</p>}
       {docs.length === 0 ? <p className="text-sm text-slate-500">Hujjat yuklanmagan</p> : (
         <ul className="space-y-1.5">
           {docs.map((d, i) => (
             <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-cream border border-apricot-100 text-sm">
-              <span className="font-medium text-slate-800">{d.label}</span>
+              <span className="font-medium text-slate-800">{d.label}{d.type && <span className="ml-1.5 text-xs font-semibold text-slate-400">{d.type === 'application/pdf' ? 'PDF' : d.type === 'image/png' ? 'PNG' : 'JPG'}</span>}</span>
               {d.path
                 ? <button type="button" onClick={() => openStored(d.path)} className="inline-flex items-center gap-1 font-semibold text-brand-700 hover:text-brand-900 shrink-0">Ochish <ExternalLink className="w-3.5 h-3.5" /></button>
                 : d.url
