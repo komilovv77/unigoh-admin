@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Award, Download, Megaphone, Search, X, Settings2 } from 'lucide-react'
+import { Award, Download, Megaphone, Search, X, Settings2, Shuffle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAdmin } from '../App'
 import { loadProfiles } from '../lib/data'
@@ -66,6 +66,15 @@ export default function Grants() {
   const pending = counted.filter((a) => !reviews[a.id]?.decision).length
   const income = apps.filter((a) => a.fee_status === 'paid').length * (settings?.fee || 0)
 
+  async function allocate() {
+    if (!window.confirm("Grantlar ball bo'yicha va talabalar xohish tartibi bo'yicha qayta taqsimlanadi. Qo'lda qo'yilgan qarorlar ustidan yoziladi. Davom etasizmi?")) return
+    setError('')
+    const { data, error } = await supabase.rpc('grant_allocate')
+    if (error) return setError(error.message)
+    window.alert(`Taqsimlandi: grant — ${data.accepted}, zaxira — ${data.waitlisted}, grantsiz — ${data.rejected}. Ishlatilmagan grantlar: ${data.unused_slots}.`)
+    load()
+  }
+
   async function publish() {
     if (!window.confirm(`Natijalar ${counted.length} ta ishtirokchiga bir vaqtda e'lon qilinadi va SMS yuboriladi. Shundan keyin qarorlarni o'zgartirib bo'lmaydi. Davom etasizmi?`)) return
     setError('')
@@ -98,6 +107,7 @@ export default function Grants() {
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setShowSettings(!showSettings)} className={btnSecondary}><Settings2 className="w-4 h-4" /> Sozlamalar</button>
             <button onClick={exportCsv} className={btnSecondary}><Download className="w-4 h-4" /> Excel</button>
+            {!published && <button onClick={allocate} disabled={!counted.length} className={btnSecondary}><Shuffle className="w-4 h-4" /> Avtomatik taqsimlash</button>}
             {!published && <button onClick={publish} disabled={!counted.length} className={btnPrimary}><Megaphone className="w-4 h-4" /> Natijalarni e'lon qilish</button>}
           </div>
         }
@@ -160,7 +170,8 @@ export default function Grants() {
                       <td className="px-4 py-3 font-semibold">{r.score ?? '—'}</td>
                       <td className="px-4 py-3">
                         <Badge m={DECISION} v={r.decision} />
-                        {r.decision === 'ACCEPTED' && r.award_percent && <p className="mt-1 text-xs font-semibold text-apricot-700">{r.award_percent}% · {r.funded_by === 'university' ? 'universitet' : 'UniGoh'}</p>}
+                        {r.decision === 'ACCEPTED' && r.award_percent && <p className="mt-1 text-xs font-semibold text-apricot-700">{r.award_percent}% · {r.funded_by === 'university' ? 'universitet' : 'UniGoh'}{r.choice_rank ? ` · ${r.choice_rank}-tanlov` : ''}</p>}
+                        {r.excluded && <p className="mt-1 text-xs font-semibold text-red-600">Chetlatilgan</p>}
                       </td>
                     </tr>
                   )
@@ -180,12 +191,21 @@ export default function Grants() {
 }
 
 function SettingsCard({ s, onSaved }) {
-  const [f, setF] = useState({ season: s.season, fee: s.fee, min_dtm: s.min_dtm, deadline: s.deadline || '', accepting: s.accepting })
+  const { universities } = useAdmin()
+  const [f, setF] = useState({ season: s.season, fee: s.fee, min_dtm: s.min_dtm, deadline: s.deadline || '', accepting: s.accepting, waitlist_size: s.waitlist_size ?? 10 })
+  const pool = Array.isArray(s.pool) ? s.pool : []
+  const [uniCounts, setUniCounts] = useState(Object.fromEntries(pool.filter((p) => p.university_id).map((p) => [`${p.university_id}|${p.percent}`, p.count])))
+  const [ugCounts, setUgCounts] = useState(Object.fromEntries(pool.filter((p) => !p.university_id).map((p) => [p.percent, p.count])))
   const [err, setErr] = useState('')
   async function save(e) {
     e.preventDefault()
     setErr('')
-    const patch = { season: Number(f.season), fee: Number(f.fee), min_dtm: Number(f.min_dtm), deadline: f.deadline || null, accepting: f.accepting, updated_at: new Date() }
+    const nextPool = [
+      ...Object.entries(uniCounts).filter(([, c]) => Number(c) > 0).map(([k, c]) => { const [university_id, percent] = k.split('|'); return { university_id, percent: Number(percent), count: Number(c), funded_by: 'university' } }),
+      ...Object.entries(ugCounts).filter(([, c]) => Number(c) > 0).map(([percent, c]) => ({ university_id: null, percent: Number(percent), count: Number(c), funded_by: 'unigoh' })),
+    ]
+    const patch = { season: Number(f.season), fee: Number(f.fee), min_dtm: Number(f.min_dtm), deadline: f.deadline || null, accepting: f.accepting,
+      waitlist_size: Number(f.waitlist_size) || 0, pool: nextPool, updated_at: new Date() }
     if (Number(f.season) !== s.season) {
       if (!window.confirm(`${f.season}-mavsum boshlansinmi? Yangi mavsumda talabalar qaytadan ariza beradi, natijalar e'loni nolga tushadi.`)) return
       patch.results_published_at = null
@@ -208,6 +228,35 @@ function SettingsCard({ s, onSaved }) {
         <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
           <input type="checkbox" className="w-4 h-4 accent-blue-800" checked={f.accepting} onChange={set('accepting')} /> Arizalar qabul qilinmoqda
         </label>
+
+        <div className="pt-2 border-t border-brand-100">
+          <h3 className="font-bold text-brand-900">Grantlar fondi</h3>
+          <p className="text-sm text-slate-600">Universitet grantlari faqat o'sha universitetda beriladi. UniGoh grantlari istalgan hamkor universitetda ishlatiladi.</p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-slate-500"><th className="py-1.5 font-medium">Universitet</th>{[100, 50, 25].map((p) => <th key={p} className="py-1.5 font-medium w-24">{p}% soni</th>)}</tr></thead>
+              <tbody>
+                {universities.map((u) => (
+                  <tr key={u.id} className="border-t border-brand-50">
+                    <td className="py-1.5 pr-2 font-medium text-brand-900">{u.name}</td>
+                    {[100, 50, 25].map((p) => (
+                      <td key={p} className="py-1.5 pr-2"><input type="number" min="0" className={inputCls} value={uniCounts[`${u.id}|${p}`] ?? ''} onChange={(e) => setUniCounts({ ...uniCounts, [`${u.id}|${p}`]: e.target.value })} /></td>
+                    ))}
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-apricot-200 bg-apricot-50/50">
+                  <td className="py-1.5 pr-2 font-bold text-apricot-800">UniGoh (istalgan universitet)</td>
+                  {[100, 50, 25].map((p) => (
+                    <td key={p} className="py-1.5 pr-2"><input type="number" min="0" className={inputCls} value={ugCounts[p] ?? ''} onChange={(e) => setUgCounts({ ...ugCounts, [p]: e.target.value })} /></td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 max-w-xs">
+            <L t="Zaxira ro'yxati hajmi (nafar)"><input type="number" min="0" className={inputCls} value={f.waitlist_size} onChange={set('waitlist_size')} /></L>
+          </div>
+        </div>
         <ErrorBox error={err} />
         <button className={btnPrimary}>Saqlash</button>
       </form>
@@ -224,7 +273,7 @@ function GrantDrawer({ app, review, profile, locked, onClose, onSaved }) {
   const [r, setR] = useState({
     score: review?.score ?? '', decision: review?.decision || '', award_percent: review?.award_percent || '',
     award_university_id: review?.award_university_id || '', award_program: review?.award_program || '',
-    funded_by: review?.funded_by || '', note: review?.note || '',
+    funded_by: review?.funded_by || '', note: review?.note || '', excluded: !!review?.excluded,
   })
   const [err, setErr] = useState('')
   const [ok, setOk] = useState('')
@@ -258,6 +307,8 @@ function GrantDrawer({ app, review, profile, locked, onClose, onSaved }) {
       award_program: accepted ? (choice?.program || r.award_program || null) : null,
       funded_by: accepted ? r.funded_by : null,
       note: r.note || null,
+      excluded: r.excluded,
+      choice_rank: accepted ? ((app.choices || []).findIndex((c) => c.university_id === r.award_university_id) + 1 || null) : null,
       reviewed_by: user?.id,
       updated_at: new Date(),
     })
@@ -316,6 +367,7 @@ function GrantDrawer({ app, review, profile, locked, onClose, onSaved }) {
           <Card className="p-5">
             <form onSubmit={save} className="space-y-3">
               <h3 className="flex items-center gap-2 font-bold text-brand-900"><Award className="w-5 h-5 text-apricot-600" /> Baholash va qaror</h3>
+              <p className="text-sm text-slate-600">Ball qo'ying — qarorni "Avtomatik taqsimlash" o'zi chiqaradi. Kerak bo'lsa, keyin qo'lda o'zgartirishingiz mumkin.</p>
               {app.fee_status === 'unpaid' && <p className="text-sm text-apricot-800 font-medium">To'lov qilinmagan ariza natijalarda ko'rib chiqilmaydi.</p>}
               {locked && <p className="text-sm text-slate-600">Natijalar e'lon qilingan — qarorni o'zgartirib bo'lmaydi.</p>}
               <fieldset disabled={locked} className="space-y-3">
@@ -351,6 +403,10 @@ function GrantDrawer({ app, review, profile, locked, onClose, onSaved }) {
                     </L>
                   </div>
                 )}
+                <label className="flex items-start gap-2 text-sm text-slate-700">
+                  <input type="checkbox" className="mt-0.5 w-4 h-4 accent-red-600" checked={r.excluded} onChange={(e) => setR({ ...r, excluded: e.target.checked })} />
+                  <span><b>Chetlatish</b> — soxta hujjat yoki qoidabuzarlik. Grant ham, kontrakt taklifi ham berilmaydi.</span>
+                </label>
                 <L t="Ichki izoh (talabaga ko'rinmaydi)"><textarea rows={3} className={inputCls} value={r.note} onChange={set('note')} /></L>
                 <ErrorBox error={err} />
                 {ok && <p className="text-sm font-semibold text-emerald-700">{ok}</p>}

@@ -92,7 +92,14 @@ export default function AppTable({ data, showUniversity = false, initialStatus =
                         </div>
                       </td>
                       {showUniversity && <td className="px-4 py-3 text-slate-700">{uniById[a.university_id]?.code || a.university_id}</td>}
-                      <td className="px-4 py-3 text-slate-700 max-w-56 truncate">{a.program_name || '—'}</td>
+                      <td className="px-4 py-3 text-slate-700 max-w-56">
+                        <span className="block truncate">{a.program_name || '—'}</span>
+                        {a.source === 'grant' && (
+                          <span className="mt-1 inline-flex px-2 py-0.5 rounded-md bg-apricot-100 text-apricot-800 text-[11px] font-semibold">
+                            Grant tanlovidan · {a.choice_rank}-tanlov{a.grant_percent ? ` · ${a.grant_percent}% grant` : ''}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
                       {isMaster && (
                         <td className="px-4 py-3 text-right">

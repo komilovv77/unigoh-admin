@@ -105,6 +105,8 @@ export default function ApplicationDrawer({ app, profile, flag, ledgerRow, onClo
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
               <Field k="Universitet" v={uni?.name} />
               <Field k="Yo'nalish" v={app.program_name} />
+              {app.source === 'grant' && <Field k="Manba" v={`UniGoh grant tanlovi · talabaning ${app.choice_rank}-tanlovi`} />}
+              {app.grant_percent && <Field k="Grant" v={`${app.grant_percent}% · ${app.grant_funded_by === 'university' ? 'universitet granti' : 'UniGoh granti'}`} />}
               {program?.tuition && <Field k="Yo'nalish narxi" v={money(program.tuition)} />}
               <Field k="Telefon" v={profile.phone || (profile.contact_visible === false ? 'Talaba rozilik bergach ochiladi' : null)} />
               <Field k="Viloyat" v={profile.region} />
