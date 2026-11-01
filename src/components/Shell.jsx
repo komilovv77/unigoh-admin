@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { LayoutDashboard, FileText, Wallet, Building2, UserCog, LogOut, Menu, X, Search, GraduationCap, FileSignature, MessageSquare } from 'lucide-react'
+import { LayoutDashboard, FileText, Wallet, Building2, UserCog, LogOut, Menu, X, Search, GraduationCap, FileSignature, MessageSquare, Award } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAdmin } from '../App'
 import { LogoMark } from './ui'
@@ -14,6 +14,7 @@ import Staff from '../pages/Staff'
 import Contracts from '../pages/Contracts'
 import Sms from '../pages/Sms'
 import UniContracts from '../pages/UniContracts'
+import Grants from '../pages/Grants'
 
 // who: 'all' | 'master' | 'uni'
 const NAV = [
@@ -21,6 +22,7 @@ const NAV = [
   { id: 'universities', label: 'Universitetlar', icon: Building2, who: 'master', Page: Universities },
   { id: 'students', label: 'Talabalar', icon: GraduationCap, who: 'all', Page: Students },
   { id: 'applications', label: 'Arizalar', icon: FileText, who: 'all', Page: Applications },
+  { id: 'grants', label: 'Grantlar', icon: Award, who: 'master', Page: Grants },
   { id: 'finance', label: 'Moliya', icon: Wallet, who: 'master', Page: Finance },
   { id: 'contracts', label: 'Talaba shartnomasi', icon: FileSignature, who: 'master', Page: Contracts },
   { id: 'contracts', label: 'Talaba shartnomasi', icon: FileSignature, who: 'uni', Page: UniContracts },
