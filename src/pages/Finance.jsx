@@ -18,6 +18,7 @@ export default function Finance({ params }) {
   const list = useMemo(() => rows.filter((r) => (!uni || r.university_id === uni) && (!st || r.status === st)), [rows, uni, st])
   const byUni = useMemo(() => rows.filter((r) => !uni || r.university_id === uni), [rows, uni])
   const sum = (s) => byUni.filter((r) => r.status === s).reduce((a, r) => a + Number(r.amount || 0), 0)
+  const grantDue = byUni.reduce((a, r) => a + Number(r.unigoh_grant_due || 0), 0)
 
   async function mark(ids, to) {
     if (!ids.length) return
@@ -34,11 +35,13 @@ export default function Finance({ params }) {
       [`UniGoh — xizmat haqi hisoboti${u ? ': ' + u.name : ''}`],
       [`Sana: ${date(new Date())}`],
       [],
-      ['Kod', 'Talaba', 'Universitet', "Yo'nalish", 'Sana', 'Kontrakt (1-yil)', 'Foiz', 'Summa', 'Holat'],
+      ['Kod', 'Talaba', 'Universitet', "Yo'nalish", 'Sana', 'Kontrakt (1-yil)', 'Grant', 'Foiz', 'UniGoh ulushi', "UniGoh to'laydigan grant", "Sof hisob-kitob (UniGoh → universitet)", 'Holat'],
       ...list.map((r) => [r.code, profiles[r.student_id]?.full_name, uniById[r.university_id]?.name, r.program_name,
-        date(r.created_at), r.contract_amount, `${Number(r.rate)}%`, r.amount, COMMISSION[r.status]?.label]),
+        date(r.created_at), r.contract_amount, grantLabel(r), `${Number(r.rate)}%`, r.amount, r.unigoh_grant_due || 0,
+        Number(r.unigoh_grant_due || 0) - Number(r.amount || 0), COMMISSION[r.status]?.label]),
       [],
-      ['', '', '', '', '', '', 'Jami:', list.reduce((a, r) => a + Number(r.amount || 0), 0)],
+      ['', '', '', '', '', '', '', 'Jami:', list.reduce((a, r) => a + Number(r.amount || 0), 0), list.reduce((a, r) => a + Number(r.unigoh_grant_due || 0), 0),
+        list.reduce((a, r) => a + Number(r.unigoh_grant_due || 0) - Number(r.amount || 0), 0)],
     ])
   }
 
@@ -59,11 +62,16 @@ export default function Finance({ params }) {
         action={<button onClick={exportAct} className={btnSecondary}><Download className="w-4 h-4" /> Akt-sverka (Excel)</button>}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat label="Kutilmoqda" value={mln(sum('pending'))} accent />
         <Stat label="Hisob yuborilgan" value={mln(sum('invoiced'))} />
         <Stat label="To'langan" value={mln(sum('paid'))} />
+        <Stat label="UniGoh grantlari (to'lanadi)" value={mln(grantDue)} hint="Universitetga UniGoh hisobidan" />
       </div>
+      <p className="text-sm text-slate-600 -mt-2">
+        Ulush universitet haqiqatda oladigan puldan hisoblanadi: universitetning o'z granti bilan kirgan talabadan ulush olinmaydi (100% grantda — 0),
+        UniGoh granti bilan kirgan talabadan esa to'liq kontraktdan olinadi. Universitet kontrakt summasini grantdan oldingi to'liq summada kiritadi.
+      </p>
 
       {!uni && perUni.length > 0 && (
         <Card className="p-5">
@@ -123,6 +131,7 @@ export default function Finance({ params }) {
                   <th className="px-4 py-3 font-semibold text-right">Kontrakt</th>
                   <th className="px-4 py-3 font-semibold text-right">Foiz</th>
                   <th className="px-4 py-3 font-semibold text-right">Ulush</th>
+                  <th className="px-4 py-3 font-semibold text-right">UniGoh granti</th>
                   <th className="px-4 py-3 font-semibold">Holat</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -140,6 +149,10 @@ export default function Finance({ params }) {
                     <td className="px-4 py-3 text-right whitespace-nowrap">{money(r.contract_amount)}</td>
                     <td className="px-4 py-3 text-right">{Number(r.rate)}%</td>
                     <td className="px-4 py-3 text-right font-bold text-apricot-700 whitespace-nowrap">{money(r.amount)}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {r.grant_percent ? <span className="block text-xs font-semibold text-slate-500">{grantLabel(r)}</span> : null}
+                      {Number(r.unigoh_grant_due) > 0 ? money(r.unigoh_grant_due) : '—'}
+                    </td>
                     <td className="px-4 py-3"><CommissionBadge status={r.status} /></td>
                     <td className="px-4 py-3 text-right">
                       {r.status !== 'paid' && (
@@ -158,4 +171,9 @@ export default function Finance({ params }) {
       </Card>
     </div>
   )
+}
+
+function grantLabel(r) {
+  if (!r.grant_percent) return ''
+  return `${r.grant_percent}% ${r.grant_funded_by === 'university' ? 'universitet granti' : 'UniGoh granti'}`
 }

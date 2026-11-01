@@ -67,11 +67,11 @@ export default function Grants() {
   const income = apps.filter((a) => a.fee_status === 'paid').length * (settings?.fee || 0)
 
   async function allocate() {
-    if (!window.confirm("Grantlar ball bo'yicha va talabalar xohish tartibi bo'yicha qayta taqsimlanadi. Qo'lda qo'yilgan qarorlar ustidan yoziladi. Davom etasizmi?")) return
+    if (!window.confirm("Grantlar qayta taqsimlanadi: universitet grantlari — shu universitetni 1-o'ringa qo'yganlar ichidagi eng kuchlilarga, UniGoh grantlari — qolganlar ichidan umumiy reyting bo'yicha. Qo'lda qo'yilgan qarorlar ustidan yoziladi. Davom etasizmi?")) return
     setError('')
     const { data, error } = await supabase.rpc('grant_allocate')
     if (error) return setError(error.message)
-    window.alert(`Taqsimlandi: grant — ${data.accepted}, zaxira — ${data.waitlisted}, grantsiz — ${data.rejected}. Ishlatilmagan grantlar: ${data.unused_slots}.`)
+    window.alert(`Taqsimlandi: universitet chempionlari — ${data.champions}, UniGoh grantlari — ${data.unigoh}, zaxira — ${data.waitlisted}, grantsiz (kontrakt) — ${data.rejected}. Ishlatilmagan grantlar: ${data.unused_slots}.`)
     load()
   }
 
@@ -231,7 +231,7 @@ function SettingsCard({ s, onSaved }) {
 
         <div className="pt-2 border-t border-brand-100">
           <h3 className="font-bold text-brand-900">Grantlar fondi</h3>
-          <p className="text-sm text-slate-600">Universitet grantlari faqat o'sha universitetda beriladi. UniGoh grantlari istalgan hamkor universitetda ishlatiladi.</p>
+          <p className="text-sm text-slate-600">Universitet grantlari — shu universitetni 1-o'ringa qo'yganlar orasidagi eng kuchlilarga ("chempionlar"). UniGoh grantlari — qolgan barcha ishtirokchilar orasida umumiy reyting bo'yicha, talabaning 1-tanlovidagi universitetda. UniGoh grantlari sonini ariza to'lovlari yig'ilgandan keyin belgilash tavsiya etiladi.</p>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-slate-500"><th className="py-1.5 font-medium">Universitet</th>{[100, 50, 25].map((p) => <th key={p} className="py-1.5 font-medium w-24">{p}% soni</th>)}</tr></thead>
