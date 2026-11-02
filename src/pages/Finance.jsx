@@ -48,7 +48,7 @@ export default function Finance({ params }) {
   const pending = list.filter((r) => r.status === 'pending').map((r) => r.application_id)
   const invoiced = list.filter((r) => r.status === 'invoiced').map((r) => r.application_id)
 
-  // Universitetlar kesimida qarzdorlik
+  // Outstanding balance per university
   const perUni = universities.map((u) => {
     const r = rows.filter((x) => x.university_id === u.id)
     return { u, open: r.filter((x) => x.status !== 'paid').reduce((a, x) => a + Number(x.amount || 0), 0), paid: r.filter((x) => x.status === 'paid').reduce((a, x) => a + Number(x.amount || 0), 0), n: r.length }

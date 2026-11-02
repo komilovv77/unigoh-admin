@@ -229,7 +229,7 @@ export function Documents({ profile, certs }) {
   const docs = [
     ...[...stored].sort((a, b) => DOC_ORDER.indexOf(a.kind) - DOC_ORDER.indexOf(b.kind))
       .map((d) => ({ label: `${DOC_LABEL[d.kind] || 'Hujjat'}: ${d.title ? `${d.title}${d.score ? ' — ' + d.score : ''}` : d.name}`, path: d.path, type: d.type })),
-    // Eski profillardan qolgan havolalar (yangi talabalarda bo'lmaydi)
+    // Legacy link fields from old profiles (new students never have them)
     profile.diploma_url && { label: 'Shahodatnoma / attestat (eski havola)', url: profile.diploma_url },
     profile.portfolio_url && { label: 'Portfolio (eski havola)', url: profile.portfolio_url },
     ...list.map((c) => ({ label: `${c.title || 'Sertifikat'}${c.score ? ' — ' + c.score : ''}${c.file_url ? ' (eski havola)' : ''}`, url: c.file_url })),

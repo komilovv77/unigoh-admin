@@ -7,8 +7,8 @@ import { Card, PageTitle, ErrorBox, Empty, StatusBadge, btnSecondary } from '../
 import { go } from '../components/Shell'
 import { useAdmin } from '../App'
 
-// Universitet xodimi uchun: o'z universitetiga qabul qilingan talabalarning
-// UniGoh bilan roziligi/shartnomasi holati va amaldagi shartnoma matni (faqat o'qish).
+// For university staff: consent / agreement status of their admitted students
+// and the current agreement text (read-only).
 const STAGES = ['ADMITTED', 'SENT', 'CONTRACT', 'ENROLLED']
 
 export default function UniContracts() {

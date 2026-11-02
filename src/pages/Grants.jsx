@@ -7,7 +7,7 @@ import { dateTime, money, downloadCsv } from '../lib/constants'
 import { Card, PageTitle, ErrorBox, Empty, Stat, inputCls, btnPrimary, btnSecondary } from '../components/ui'
 import { Documents, Field } from '../components/ApplicationDrawer'
 
-// Grant tanlovi — faqat bosh adminlar (bazada ham shunday cheklangan)
+// Grant competition: master admins only (also enforced in the database)
 const DECISION = {
   ACCEPTED: { label: 'Grant berildi', cls: 'bg-emerald-50 text-emerald-700' },
   WAITLISTED: { label: "Zaxira ro'yxati", cls: 'bg-apricot-100 text-apricot-800' },

@@ -5,8 +5,8 @@ import { useAdmin } from '../App'
 import { dateTime } from '../lib/constants'
 import { Card, PageTitle, ErrorBox, Empty, inputCls, btnPrimary, btnSecondary } from '../components/ui'
 
-// UniGoh–talaba shartnomasi shablonlari. Imzolangan versiya o'zgarmaydi:
-// matnni o'zgartirish = yangi versiya yaratish va e'lon qilish.
+// UniGoh-student agreement templates. A signed version never changes:
+// editing the text = creating and publishing a new version.
 export default function Contracts() {
   const { session } = useAdmin()
   const [rows, setRows] = useState([])

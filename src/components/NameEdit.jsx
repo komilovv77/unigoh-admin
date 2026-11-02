@@ -3,7 +3,7 @@ import { Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { inputCls } from './ui'
 
-// Xodim ismini joyida o'zgartirish (faqat bosh admin)
+// Inline staff name editing (master only)
 export default function NameEdit({ user, name, onSaved }) {
   const [edit, setEdit] = useState(false)
   const [val, setVal] = useState(name || '')

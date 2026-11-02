@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* UniGoh brend ranglari: lojuvard (asosiy), o'rik (urg'u), krem (fon) */
+/* UniGoh brand colors: lapis (primary), apricot (accent), cream (background) */
 @theme {
   --color-brand-50: #eff4ff;
   --color-brand-100: #dbe6fe;

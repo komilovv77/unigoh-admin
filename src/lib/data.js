@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { useAdmin } from '../App'
 
-// Arizalar + talaba profillari (+ master uchun komissiya).
-// RLS tufayli OTM xodimi faqat o'z universiteti arizalarini va talabalarini oladi,
-// komissiya jadvallari esa unga umuman qaytmaydi.
+// Applications + student profiles (+ commissions for master).
+// Thanks to RLS, university staff only receive their own university's applications and students;
+// commission tables never reach them.
 export function useApplications({ isMaster = false, universityId = null, studentId = null } = {}) {
   const [apps, setApps] = useState([])
   const [profiles, setProfiles] = useState({})
@@ -12,8 +12,8 @@ export function useApplications({ isMaster = false, universityId = null, student
   const [ledger, setLedger] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // Universitet xodimi faqat o'z universiteti arizalarini ko'radi (hatto shu akkaunt
-  // boshqa joyga talaba sifatida ariza bergan bo'lsa ham)
+  // University staff only see their own university's applications (even if the same
+  // account applied elsewhere as a student)
   const { staff } = useAdmin()
   const ownUni = isMaster ? null : staff?.university_id || '__none__'
 
@@ -50,7 +50,7 @@ export function useApplications({ isMaster = false, universityId = null, student
 export const PROFILE_COLS =
   'id, full_name, phone, region, bio, school_name, diploma_url, test_score, certificates, portfolio_url, documents, updated_at'
 
-// Profillar: universitet xodimiga telefon talaba rozilik bergandan keyingina ko'rinadi
+// Profiles: phone visible to university staff only after the student consents
 export async function loadProfiles(ids) {
   if (!ids.length) return {}
   const { data } = await supabase.rpc('applicant_profiles', { p_ids: ids })

@@ -29,7 +29,7 @@ const NAV = [
   { id: 'sms', label: 'SMS jurnali', icon: MessageSquare, who: 'master', Page: Sms },
   { id: 'staff', label: 'Xodimlar', icon: UserCog, who: 'master', Page: Staff },
 ]
-// Menyuda ko'rinmaydigan ichki sahifalar
+// Internal pages not shown in the menu
 const HIDDEN = [
   { id: 'university', who: 'master', Page: UniversityDetail, parent: 'universities' },
   { id: 'student', who: 'all', Page: StudentDetail, parent: 'students' },

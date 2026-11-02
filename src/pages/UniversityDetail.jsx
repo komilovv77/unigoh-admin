@@ -230,7 +230,7 @@ function L({ t, children, wide }) {
   )
 }
 
-// Universitet xodimlariga admin panelga kirish huquqi (faqat master)
+// Universities' staff access to the admin panel (master only)
 function Access({ u }) {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')

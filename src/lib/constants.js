@@ -1,4 +1,4 @@
-// Ariza jarayoni bosqichlari (bazadagi applications.status bilan bir xil)
+// Application stages (same as applications.status in the database)
 export const STATUSES = [
   { value: 'NEW',         label: 'Yangi ariza',                    cls: 'bg-slate-100 text-slate-700' },
   { value: 'DOCS_REVIEW', label: "Ko'rib chiqilmoqda",             cls: 'bg-brand-50 text-brand-700' },
@@ -13,11 +13,11 @@ export const STATUSES = [
 
 export const STATUS = Object.fromEntries(STATUSES.map((s) => [s.value, s]))
 
-// Voronka uchun: shu bosqichga yetgan yoki undan o'tganlar
+// Funnel: reached this stage or beyond
 export const FUNNEL = ['NEW', 'DOCS_REVIEW', 'EXAM', 'ADMITTED', 'SENT', 'CONTRACT', 'ENROLLED']
 export const ACTIVE = ['NEW', 'DOCS_REVIEW', 'EXAM', 'ADMITTED', 'SENT', 'CONTRACT']
 
-// Universitet xodimi qaysi holatlarni qo'ya oladi (bazadagi qoidalar bilan bir xil)
+// Statuses a university admin may set (mirrors the database rules)
 export function allowedStatuses(app, isMaster) {
   if (isMaster) return STATUSES.map((s) => s.value)
   if (app.status === 'WITHDRAWN') return ['WITHDRAWN']

@@ -3,8 +3,8 @@ import { ShieldCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { inputCls, btnPrimary, btnSecondary, ErrorBox } from './ui'
 
-// Admin panelga ikki bosqichli kirish (Google Authenticator va shunga o'xshash ilovalar).
-// Baza ham xodim ma'lumotlarini faqat ikkinchi bosqichdan o'tgan sessiyaga beradi.
+// Two-factor sign-in for the admin panel (Google Authenticator and similar apps).
+// The database also serves staff data only to sessions that passed the second factor.
 export default function Mfa({ onVerified }) {
   const [state, setState] = useState('loading') // loading | enroll | verify
   const [factorId, setFactorId] = useState(null)
@@ -20,7 +20,7 @@ export default function Mfa({ onVerified }) {
       if (error) { setError(error.message); setState('verify'); return }
       const verified = (data.totp || []).find((f) => f.status === 'verified')
       if (verified) { setFactorId(verified.id); setState('verify'); return }
-      // Avvalgi tugallanmagan urinishlarni tozalash
+      // Clear previous unfinished attempts
       for (const f of data.all || []) if (f.status !== 'verified') await supabase.auth.mfa.unenroll({ factorId: f.id })
       const r = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `UniGoh ${new Date().toISOString().slice(0, 10)}` })
       if (r.error) { setError(r.error.message); setState('enroll'); return }

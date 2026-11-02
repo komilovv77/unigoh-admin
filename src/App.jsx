@@ -9,7 +9,7 @@ const AdminContext = createContext(null)
 export const useAdmin = () => useContext(AdminContext)
 
 export default function App() {
-  const [session, setSession] = useState(undefined) // undefined = yuklanmoqda
+  const [session, setSession] = useState(undefined) // undefined = loading
   const [staff, setStaff] = useState(undefined)
   const [universities, setUniversities] = useState([])
   const [recovering, setRecovering] = useState(false)

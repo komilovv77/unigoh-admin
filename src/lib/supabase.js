@@ -5,6 +5,6 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const isConfigured = Boolean(url && key)
 
-// Asosiy sayt bilan BIR XIL Supabase loyihasi ishlatiladi.
-// Kirish huquqlari bazadagi RLS qoidalari bilan nazorat qilinadi (supabase/migrations).
+// Uses the SAME Supabase project as the main site.
+// Access is enforced by RLS policies in the database (supabase/migrations).
 export const supabase = isConfigured ? createClient(url, key) : null
